@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRight, Lock, User, AlertCircle } from 'lucide-react';
 import { UserRole, UserSession } from '../types';
+import { Logo } from './ui/Logo';
 
 interface LoginProps {
   onLogin: (session: UserSession) => void;
@@ -8,12 +9,17 @@ interface LoginProps {
 
 // User database configuration
 const USERS_DB = [
+  // Admins
+  { username: 'ondik', password: '2323', displayName: 'p. Ondik', role: 'admin' as UserRole },
+  { username: 'admin', password: '9999', displayName: 'Admin', role: 'admin' as UserRole },
+  { username: 'olšavska', password: '0123', displayName: 'p. Olšavska', role: 'admin' as UserRole },
+  
+  // Users
   { username: 'kukučka', password: '1234', displayName: 'p. Kukučka', role: 'user' as UserRole },
   { username: 'hudák', password: '1111', displayName: 'p. Hudák', role: 'user' as UserRole },
   { username: 'šoltis', password: '1212', displayName: 'p. Šoltis', role: 'user' as UserRole },
-  { username: 'olšavska', password: '0123', displayName: 'p. Olšavska', role: 'admin' as UserRole },
-  { username: 'raš', password: '0987', displayName: 'p. Raš', role: 'user' as UserRole },
-  { username: 'guest', password: '1234', displayName: 'Guest', role: 'user' as UserRole }
+  { username: 'guest', password: '1234', displayName: 'Guest', role: 'user' as UserRole },
+  { username: 'raš', password: '0987', displayName: 'p. Raš', role: 'user' as UserRole }
 ];
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -64,15 +70,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       <div className="w-full max-w-sm relative z-10">
         <div className="flex flex-col items-center mb-12">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-red-600 rounded-lg -skew-x-12 flex items-center justify-center shadow-lg shadow-red-900/40">
-                <span className="text-white font-black text-2xl italic">M</span>
-            </div>
-            <div className="flex flex-col">
-                <h1 className="text-3xl font-black text-white italic leading-none tracking-tighter">MION</h1>
-            </div>
-          </div>
-          <p className="text-red-600 font-bold tracking-[0.3em] text-[10px] uppercase pl-1">Building Company</p>
+            {/* Logo Component */}
+            <Logo className="w-24 h-24 text-white mb-6" />
+            
+            <h1 className="text-5xl font-black text-white italic tracking-tighter mb-2">MION</h1>
+            <p className="text-xs text-zinc-500 uppercase tracking-[0.3em] font-bold">Building Company</p>
         </div>
 
         <div className="mb-8 text-center">
@@ -90,7 +92,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
                 <input 
                   type="text" 
-                  placeholder="napr. Kukučka" 
+                  placeholder="napr. Ondik" 
                   value={name}
                   onChange={(e) => {
                       setName(e.target.value);

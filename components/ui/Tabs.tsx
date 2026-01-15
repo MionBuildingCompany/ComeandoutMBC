@@ -39,10 +39,12 @@ export const Tabs: React.FC<TabsProps> = ({ currentView, setView, onLogout, isAd
             <NavItem view="dashboard" icon={LayoutDashboard} label="Záznam" />
             
             {isAdmin && (
-                <NavItem view="reports" icon={FileBarChart} label="Reporty" />
+                <>
+                    <NavItem view="reports" icon={FileBarChart} label="Reporty" />
+                    <NavItem view="manage" icon={Users} label="Správa" />
+                </>
             )}
 
-            <NavItem view="manage" icon={Users} label="Správa" />
             <NavItem view="history" icon={History} label="História" />
             
             <button 

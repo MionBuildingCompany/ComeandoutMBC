@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Site, Worker, WorkRecord } from '../types';
 import { TimeInput } from './TimeInput';
+import { Logo } from './ui/Logo';
 import { CheckCircle2, Play, StopCircle, Clock, MapPin, HardHat, CalendarCheck, Zap } from 'lucide-react';
 
 interface DashboardProps {
@@ -159,11 +160,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ sites, workers, records, o
         <header className="mb-6 md:mb-8 border-b border-white/10 pb-6">
             <div className="flex justify-between items-center">
                 <div>
-                     <div className="md:hidden flex items-center gap-2 mb-1">
-                        <div className="w-8 h-8 bg-red-600 rounded-lg -skew-x-12 flex items-center justify-center">
-                            <span className="text-white font-black text-sm italic">M</span>
+                     <div className="md:hidden flex items-center gap-3 mb-1">
+                        <Logo className="h-10 w-10 text-white" />
+                        <div>
+                            <h1 className="text-2xl font-black text-white italic tracking-tighter leading-none">MION</h1>
+                            <p className="text-[8px] text-zinc-500 uppercase tracking-[0.2em] font-bold">Building Company</p>
                         </div>
-                        <span className="text-white font-black text-xl italic tracking-tighter">MION</span>
                     </div>
                      <h2 className="hidden md:block text-3xl font-black text-white uppercase italic tracking-wide">Nová Zmena</h2>
                      <p className="text-zinc-500 text-xs md:text-sm mt-1">Evidencia príchodov a odchodov</p>

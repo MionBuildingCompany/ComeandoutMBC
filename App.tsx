@@ -6,6 +6,7 @@ import { Tabs } from './components/ui/Tabs';
 import { History } from './components/History';
 import { Reports } from './components/Reports';
 import { WorkerProfile } from './components/WorkerProfile';
+import { Logo } from './components/ui/Logo';
 import { Site, Worker, WorkRecord, ViewState, UserSession } from './types';
 import { LayoutDashboard, Users, History as HistoryIcon, LogOut, FileBarChart, Lock } from 'lucide-react';
 
@@ -172,23 +173,26 @@ const App: React.FC = () => {
 
       {/* Desktop Sidebar (Visible only on md+) */}
       <aside className="hidden md:flex flex-col w-80 h-screen sticky top-0 p-6 z-20 border-r border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="flex items-center gap-3 mb-16 px-4">
-            <div className="w-10 h-10 bg-red-600 rounded-lg -skew-x-12 flex items-center justify-center shadow-lg shadow-red-900/40 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-transparent"></div>
-                <span className="text-white font-black text-lg italic relative z-10">M</span>
-            </div>
-            <div>
-                <h1 className="text-2xl font-black text-white italic leading-none tracking-tighter">MION</h1>
-                <p className="text-zinc-500 font-bold tracking-[0.3em] text-[8px] uppercase">Building Company</p>
+        <div className="mb-12 px-2">
+            <div className="flex flex-col items-start">
+                {/* Logo Replacement */}
+                <div className="mb-4">
+                  <Logo className="h-16 w-16 text-white" />
+                </div>
+                
+                <h1 className="text-4xl font-black text-white italic tracking-tighter leading-none">MION</h1>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-[0.25em] font-bold mt-1 ml-0.5">Building Company</p>
             </div>
         </div>
 
         <nav className="flex-1 space-y-3">
-            <SidebarLink targetView="dashboard" icon={LayoutDashboard} label="Záznam Práce" />
+            <SidebarLink targetView="dashboard" icon={LayoutDashboard} label="Zmena" />
             {isAdmin && (
-                <SidebarLink targetView="reports" icon={FileBarChart} label="Reporty & Export" />
+                <>
+                    <SidebarLink targetView="reports" icon={FileBarChart} label="Reporty & Export" />
+                    <SidebarLink targetView="manage" icon={Users} label="Správa Dát" />
+                </>
             )}
-            <SidebarLink targetView="manage" icon={Users} label="Správa Dát" />
             <SidebarLink targetView="history" icon={HistoryIcon} label="História" />
         </nav>
 
@@ -227,7 +231,8 @@ const App: React.FC = () => {
             foremanName={currentUser.name || 'Admin'}
           />
         )}
-        {view === 'manage' && (
+        
+        {view === 'manage' && isAdmin && (
           <Management 
             sites={sites} 
             workers={workers}
@@ -238,7 +243,8 @@ const App: React.FC = () => {
             onSelectWorker={handleSelectWorker}
           />
         )}
-        {view === 'worker_profile' && selectedWorker && (
+
+        {view === 'worker_profile' && selectedWorker && isAdmin && (
             <WorkerProfile 
                 worker={selectedWorker}
                 records={records}
@@ -246,6 +252,7 @@ const App: React.FC = () => {
                 onBack={() => setView('manage')}
             />
         )}
+
         {view === 'history' && (
             <History 
                 records={records}
@@ -254,6 +261,7 @@ const App: React.FC = () => {
                 onDeleteRecord={deleteRecord}
             />
         )}
+
         {view === 'reports' && isAdmin && (
             <Reports 
                 records={records}
@@ -261,14 +269,15 @@ const App: React.FC = () => {
                 workers={workers}
             />
         )}
-        {/* Redirect if user tries to access reports but is not admin */}
-        {view === 'reports' && !isAdmin && (
+
+        {/* Redirect/Lock Screen if user tries to access restricted areas (Manage/Reports/Profile) */}
+        {((view === 'manage' || view === 'reports' || view === 'worker_profile') && !isAdmin) && (
             <div className="flex items-center justify-center h-full flex-col p-6 text-center">
                  <div className="w-16 h-16 bg-red-600/10 rounded-full flex items-center justify-center mb-4">
                     <Lock size={32} className="text-red-600" />
                  </div>
                  <h2 className="text-xl font-bold text-white uppercase tracking-wide">Prístup zamietnutý</h2>
-                 <p className="text-zinc-500 mt-2 text-sm max-w-xs">Táto sekcia je dostupná len pre administrátorov.</p>
+                 <p className="text-zinc-500 mt-2 text-sm max-w-xs">Táto sekcia je dostupná len pre administrátorov (Ondik, Olšavska, Admin).</p>
                  <button onClick={() => setView('dashboard')} className="mt-6 text-sm font-bold text-white border-b border-red-600 pb-1">Späť na nástenku</button>
             </div>
         )}
