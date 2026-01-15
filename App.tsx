@@ -10,21 +10,21 @@ import { Logo } from './components/ui/Logo';
 import { Site, Worker, WorkRecord, ViewState, UserSession } from './types';
 import { LayoutDashboard, Users, History as HistoryIcon, LogOut, FileBarChart, Lock } from 'lucide-react';
 
-// Mock data to initialize if localStorage is empty
-const INITIAL_SITES: Site[] = [
-  { id: '1', name: 'Rezidencia Horský Park', address: 'Bratislava, Horská 10' },
-  { id: '2', name: 'Business Centrum Nivy', address: 'Bratislava, Mlynské Nivy 5' },
-];
-
-const INITIAL_WORKERS: Worker[] = [
-  { id: '1', name: 'Ján Novák', role: 'Murár' },
-  { id: '2', name: 'Peter Kováč', role: 'Zvárač' },
-  { id: '3', name: 'Marek Horváth', role: 'Pomocný robotník' },
-];
+// Firebase Imports
+import { db } from './firebase';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  onSnapshot, 
+  query, 
+  orderBy 
+} from 'firebase/firestore';
 
 const App: React.FC = () => {
-  // State initialization with LocalStorage
-  // We initialize from localStorage, if empty -> null (shows Login)
+  // Session still uses LocalStorage for "Keep me logged in" functionality on this specific device
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
     const saved = localStorage.getItem('app_session');
     if (saved) {
@@ -40,30 +40,54 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('dashboard');
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   
-  const [sites, setSites] = useState<Site[]>(() => {
-    const saved = localStorage.getItem('app_sites');
-    return saved ? JSON.parse(saved) : INITIAL_SITES;
-  });
-  
-  const [workers, setWorkers] = useState<Worker[]>(() => {
-    const saved = localStorage.getItem('app_workers');
-    return saved ? JSON.parse(saved) : INITIAL_WORKERS;
-  });
+  // Data State (Loaded from Firebase)
+  const [sites, setSites] = useState<Site[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [records, setRecords] = useState<WorkRecord[]>([]);
 
-  const [records, setRecords] = useState<WorkRecord[]>(() => {
-    const saved = localStorage.getItem('app_records');
-    // Migration: add status 'completed' to old records if missing
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.map((r: any) => ({ ...r, status: r.status || 'completed' }));
-    }
-    return [];
-  });
+  // --- FIREBASE LISTENERS ---
 
-  // Persistence Effects
-  useEffect(() => localStorage.setItem('app_sites', JSON.stringify(sites)), [sites]);
-  useEffect(() => localStorage.setItem('app_workers', JSON.stringify(workers)), [workers]);
-  useEffect(() => localStorage.setItem('app_records', JSON.stringify(records)), [records]);
+  // 1. Listen for SITES
+  useEffect(() => {
+    const q = query(collection(db, 'sites'), orderBy('name'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const sitesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Site[];
+      setSites(sitesData);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Listen for WORKERS
+  useEffect(() => {
+    const q = query(collection(db, 'workers'), orderBy('name'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const workersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Worker[];
+      setWorkers(workersData);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Listen for RECORDS
+  useEffect(() => {
+    // Ordering by createdAt desc to show newest first
+    const q = query(collection(db, 'records'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const recordsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as WorkRecord[];
+      setRecords(recordsData);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Session Persistence
   useEffect(() => {
     if (currentUser) localStorage.setItem('app_session', JSON.stringify(currentUser));
     else localStorage.removeItem('app_session');
@@ -77,42 +101,76 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setView('dashboard'); // Reset view on logout
+    setView('dashboard');
   };
 
-  const addRecord = (recordData: Omit<WorkRecord, 'id' | 'createdAt'>) => {
-    const newRecord: WorkRecord = {
-      ...recordData,
-      id: crypto.randomUUID(),
-      createdAt: Date.now(),
-    };
-    setRecords(prev => [newRecord, ...prev]);
+  // --- FIREBASE ACTIONS ---
+
+  const addRecord = async (recordData: Omit<WorkRecord, 'id' | 'createdAt'>) => {
+    try {
+      await addDoc(collection(db, 'records'), {
+        ...recordData,
+        createdAt: Date.now(),
+      });
+    } catch (e) {
+      console.error("Error adding record: ", e);
+      alert("Chyba pri ukladaní záznamu. Skontrolujte pripojenie.");
+    }
   };
 
-  const updateRecord = (id: string, updates: Partial<WorkRecord>) => {
-    setRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+  const updateRecord = async (id: string, updates: Partial<WorkRecord>) => {
+    try {
+      const recordRef = doc(db, 'records', id);
+      await updateDoc(recordRef, updates);
+    } catch (e) {
+      console.error("Error updating record: ", e);
+    }
   };
 
-  const deleteRecord = (id: string) => {
-      setRecords(prev => prev.filter(r => r.id !== id));
+  const deleteRecord = async (id: string) => {
+    if(window.confirm('Naozaj chcete zmazať tento záznam?')) {
+        try {
+            await deleteDoc(doc(db, 'records', id));
+        } catch (e) {
+            console.error("Error deleting record: ", e);
+        }
+    }
   };
 
-  const addSite = (name: string, address: string) => {
-    const newSite: Site = { id: crypto.randomUUID(), name, address };
-    setSites(prev => [...prev, newSite]);
+  const addSite = async (name: string, address: string) => {
+    try {
+        await addDoc(collection(db, 'sites'), { name, address });
+    } catch (e) {
+        console.error("Error adding site: ", e);
+    }
   };
 
-  const removeSite = (id: string) => {
-    setSites(prev => prev.filter(s => s.id !== id));
+  const removeSite = async (id: string) => {
+    if(window.confirm('Naozaj zmazať túto stavbu?')) {
+        try {
+            await deleteDoc(doc(db, 'sites', id));
+        } catch (e) {
+            console.error("Error removing site: ", e);
+        }
+    }
   };
 
-  const addWorker = (name: string, role: string) => {
-    const newWorker: Worker = { id: crypto.randomUUID(), name, role };
-    setWorkers(prev => [...prev, newWorker]);
+  const addWorker = async (name: string, role: string) => {
+    try {
+        await addDoc(collection(db, 'workers'), { name, role });
+    } catch (e) {
+        console.error("Error adding worker: ", e);
+    }
   };
 
-  const removeWorker = (id: string) => {
-    setWorkers(prev => prev.filter(w => w.id !== id));
+  const removeWorker = async (id: string) => {
+    if(window.confirm('Naozaj zmazať pracovníka? História záznamov ostane zachovaná.')) {
+        try {
+            await deleteDoc(doc(db, 'workers', id));
+        } catch (e) {
+            console.error("Error removing worker: ", e);
+        }
+    }
   };
 
   const handleSelectWorker = (workerId: string) => {
@@ -122,9 +180,7 @@ const App: React.FC = () => {
 
   // Helper for Desktop Sidebar Links
   const SidebarLink = ({ targetView, icon: Icon, label }: { targetView: ViewState, icon: any, label: string }) => {
-    // Determine active state: exact match OR if we are in profile view and the target is manage (parent)
     const isActive = view === targetView || (view === 'worker_profile' && targetView === 'manage');
-    
     return (
         <button 
             onClick={() => setView(targetView)}
@@ -133,16 +189,12 @@ const App: React.FC = () => {
                 ${isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-200'}
             `}
         >
-            {/* Active Background with Gradient */}
             {isActive && (
                 <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-800 opacity-90 border border-red-500/20 shadow-[0_0_30px_-5px_rgba(220,38,38,0.4)]" />
             )}
-            
-            {/* Hover Background for inactive */}
             {!isActive && (
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-colors" />
             )}
-
             <Icon size={22} className={`relative z-10 ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-white transition-colors'}`} strokeWidth={isActive ? 2.5 : 2} />
             <span className={`relative z-10 font-bold text-sm uppercase tracking-wider ${isActive ? 'translate-x-1' : ''} transition-transform`}>{label}</span>
         </button>
@@ -175,7 +227,6 @@ const App: React.FC = () => {
       <aside className="hidden md:flex flex-col w-80 h-screen sticky top-0 p-6 z-20 border-r border-white/5 bg-black/40 backdrop-blur-2xl">
         <div className="mb-12 px-2">
             <div className="flex flex-col items-start">
-                {/* Logo Replacement */}
                 <div className="mb-4">
                   <Logo className="h-16 w-16 text-white" />
                 </div>
@@ -212,7 +263,6 @@ const App: React.FC = () => {
                 <span className="font-bold text-sm uppercase tracking-wide">Odhlásiť</span>
             </button>
             
-            {/* Credits Footer */}
             <p className="text-[9px] text-zinc-700 text-center font-medium mt-6 tracking-wider opacity-60 hover:opacity-100 transition-opacity cursor-default">
                 Vytvoril a spravuje Stoler Danil © 2026
             </p>
@@ -270,7 +320,6 @@ const App: React.FC = () => {
             />
         )}
 
-        {/* Redirect/Lock Screen if user tries to access restricted areas (Manage/Reports/Profile) */}
         {((view === 'manage' || view === 'reports' || view === 'worker_profile') && !isAdmin) && (
             <div className="flex items-center justify-center h-full flex-col p-6 text-center">
                  <div className="w-16 h-16 bg-red-600/10 rounded-full flex items-center justify-center mb-4">
