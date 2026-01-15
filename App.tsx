@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { Management } from './components/Management';
+import { Login } from './components/Login';
 import { Tabs } from './components/ui/Tabs';
 import { History } from './components/History';
 import { Reports } from './components/Reports';
@@ -21,8 +22,7 @@ const INITIAL_WORKERS: Worker[] = [
 
 const App: React.FC = () => {
   // State initialization with LocalStorage
-  const [user, setUser] = useState<string | null>('Štefan Kukučka'); // Default user for development
-
+  const [user, setUser] = useState<string | null>(() => localStorage.getItem('app_user'));
   const [view, setView] = useState<ViewState>('dashboard');
   
   const [sites, setSites] = useState<Site[]>(() => {
@@ -50,8 +50,14 @@ const App: React.FC = () => {
   }, [user]);
 
   // Handlers
+  const handleLogin = (name: string) => {
+    setUser(name);
+    setView('dashboard');
+  };
+
   const handleLogout = () => {
-    alert("Logout temporarily disabled during development");
+    setUser(null);
+    setView('dashboard'); // Reset view on logout
   };
 
   const addRecord = (recordData: Omit<WorkRecord, 'id' | 'createdAt'>) => {
@@ -111,6 +117,11 @@ const App: React.FC = () => {
         </button>
     );
   };
+
+  // Render Login if no user
+  if (!user) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-red-600 selection:text-white relative overflow-hidden flex">
