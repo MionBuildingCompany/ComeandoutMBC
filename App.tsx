@@ -5,8 +5,9 @@ import { Login } from './components/Login';
 import { Tabs } from './components/ui/Tabs';
 import { History } from './components/History';
 import { Reports } from './components/Reports';
-import { Site, Worker, WorkRecord, ViewState } from './types';
-import { LayoutDashboard, Users, History as HistoryIcon, LogOut, FileBarChart } from 'lucide-react';
+import { WorkerProfile } from './components/WorkerProfile';
+import { Site, Worker, WorkRecord, ViewState, UserSession } from './types';
+import { LayoutDashboard, Users, History as HistoryIcon, LogOut, FileBarChart, Lock } from 'lucide-react';
 
 // Mock data to initialize if localStorage is empty
 const INITIAL_SITES: Site[] = [
@@ -22,8 +23,21 @@ const INITIAL_WORKERS: Worker[] = [
 
 const App: React.FC = () => {
   // State initialization with LocalStorage
-  const [user, setUser] = useState<string | null>(() => localStorage.getItem('app_user'));
+  // We initialize from localStorage, if empty -> null (shows Login)
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
+    const saved = localStorage.getItem('app_session');
+    if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
+  });
+
   const [view, setView] = useState<ViewState>('dashboard');
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   
   const [sites, setSites] = useState<Site[]>(() => {
     const saved = localStorage.getItem('app_sites');
@@ -37,7 +51,12 @@ const App: React.FC = () => {
 
   const [records, setRecords] = useState<WorkRecord[]>(() => {
     const saved = localStorage.getItem('app_records');
-    return saved ? JSON.parse(saved) : [];
+    // Migration: add status 'completed' to old records if missing
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((r: any) => ({ ...r, status: r.status || 'completed' }));
+    }
+    return [];
   });
 
   // Persistence Effects
@@ -45,18 +64,18 @@ const App: React.FC = () => {
   useEffect(() => localStorage.setItem('app_workers', JSON.stringify(workers)), [workers]);
   useEffect(() => localStorage.setItem('app_records', JSON.stringify(records)), [records]);
   useEffect(() => {
-    if (user) localStorage.setItem('app_user', user);
-    else localStorage.removeItem('app_user');
-  }, [user]);
+    if (currentUser) localStorage.setItem('app_session', JSON.stringify(currentUser));
+    else localStorage.removeItem('app_session');
+  }, [currentUser]);
 
   // Handlers
-  const handleLogin = (name: string) => {
-    setUser(name);
+  const handleLogin = (session: UserSession) => {
+    setCurrentUser(session);
     setView('dashboard');
   };
 
   const handleLogout = () => {
-    setUser(null);
+    setCurrentUser(null);
     setView('dashboard'); // Reset view on logout
   };
 
@@ -67,6 +86,10 @@ const App: React.FC = () => {
       createdAt: Date.now(),
     };
     setRecords(prev => [newRecord, ...prev]);
+  };
+
+  const updateRecord = (id: string, updates: Partial<WorkRecord>) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
   };
 
   const deleteRecord = (id: string) => {
@@ -91,9 +114,16 @@ const App: React.FC = () => {
     setWorkers(prev => prev.filter(w => w.id !== id));
   };
 
+  const handleSelectWorker = (workerId: string) => {
+    setSelectedWorkerId(workerId);
+    setView('worker_profile');
+  };
+
   // Helper for Desktop Sidebar Links
   const SidebarLink = ({ targetView, icon: Icon, label }: { targetView: ViewState, icon: any, label: string }) => {
-    const isActive = view === targetView;
+    // Determine active state: exact match OR if we are in profile view and the target is manage (parent)
+    const isActive = view === targetView || (view === 'worker_profile' && targetView === 'manage');
+    
     return (
         <button 
             onClick={() => setView(targetView)}
@@ -119,9 +149,12 @@ const App: React.FC = () => {
   };
 
   // Render Login if no user
-  if (!user) {
+  if (!currentUser) {
     return <Login onLogin={handleLogin} />;
   }
+
+  const isAdmin = currentUser.role === 'admin';
+  const selectedWorker = workers.find(w => w.id === selectedWorkerId);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-red-600 selection:text-white relative overflow-hidden flex">
@@ -152,7 +185,9 @@ const App: React.FC = () => {
 
         <nav className="flex-1 space-y-3">
             <SidebarLink targetView="dashboard" icon={LayoutDashboard} label="Záznam Práce" />
-            <SidebarLink targetView="reports" icon={FileBarChart} label="Reporty & Export" />
+            {isAdmin && (
+                <SidebarLink targetView="reports" icon={FileBarChart} label="Reporty & Export" />
+            )}
             <SidebarLink targetView="manage" icon={Users} label="Správa Dát" />
             <SidebarLink targetView="history" icon={HistoryIcon} label="História" />
         </nav>
@@ -161,8 +196,8 @@ const App: React.FC = () => {
             <div className="px-4 py-4 mb-2 bg-white/5 rounded-2xl border border-white/5">
                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Prihlásený ako</p>
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <p className="text-sm font-bold text-white truncate">{user}</p>
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${isAdmin ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                    <p className="text-sm font-bold text-white truncate">{currentUser.name}</p>
                 </div>
             </div>
             <button 
@@ -186,8 +221,10 @@ const App: React.FC = () => {
           <Dashboard 
             sites={sites} 
             workers={workers} 
+            records={records}
             onAddRecord={addRecord} 
-            foremanName={user || 'Admin'}
+            onUpdateRecord={updateRecord}
+            foremanName={currentUser.name || 'Admin'}
           />
         )}
         {view === 'manage' && (
@@ -198,7 +235,16 @@ const App: React.FC = () => {
             onRemoveSite={removeSite}
             onAddWorker={addWorker}
             onRemoveWorker={removeWorker}
+            onSelectWorker={handleSelectWorker}
           />
+        )}
+        {view === 'worker_profile' && selectedWorker && (
+            <WorkerProfile 
+                worker={selectedWorker}
+                records={records}
+                sites={sites}
+                onBack={() => setView('manage')}
+            />
         )}
         {view === 'history' && (
             <History 
@@ -208,16 +254,32 @@ const App: React.FC = () => {
                 onDeleteRecord={deleteRecord}
             />
         )}
-        {view === 'reports' && (
+        {view === 'reports' && isAdmin && (
             <Reports 
                 records={records}
                 sites={sites}
                 workers={workers}
             />
         )}
+        {/* Redirect if user tries to access reports but is not admin */}
+        {view === 'reports' && !isAdmin && (
+            <div className="flex items-center justify-center h-full flex-col p-6 text-center">
+                 <div className="w-16 h-16 bg-red-600/10 rounded-full flex items-center justify-center mb-4">
+                    <Lock size={32} className="text-red-600" />
+                 </div>
+                 <h2 className="text-xl font-bold text-white uppercase tracking-wide">Prístup zamietnutý</h2>
+                 <p className="text-zinc-500 mt-2 text-sm max-w-xs">Táto sekcia je dostupná len pre administrátorov.</p>
+                 <button onClick={() => setView('dashboard')} className="mt-6 text-sm font-bold text-white border-b border-red-600 pb-1">Späť na nástenku</button>
+            </div>
+        )}
       </main>
 
-      <Tabs currentView={view} setView={setView} onLogout={handleLogout} />
+      <Tabs 
+        currentView={view === 'worker_profile' ? 'manage' : view} 
+        setView={setView} 
+        onLogout={handleLogout} 
+        isAdmin={isAdmin} 
+      />
     </div>
   );
 };

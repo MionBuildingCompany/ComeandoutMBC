@@ -6,9 +6,10 @@ interface TabsProps {
   currentView: ViewState;
   setView: (view: ViewState) => void;
   onLogout: () => void;
+  isAdmin: boolean;
 }
 
-export const Tabs: React.FC<TabsProps> = ({ currentView, setView, onLogout }) => {
+export const Tabs: React.FC<TabsProps> = ({ currentView, setView, onLogout, isAdmin }) => {
   
   const NavItem = ({ view, icon: Icon, label }: { view: ViewState, icon: any, label: string }) => {
     const isActive = currentView === view;
@@ -36,7 +37,11 @@ export const Tabs: React.FC<TabsProps> = ({ currentView, setView, onLogout }) =>
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] border-t border-white/10 h-[84px] pb-5 pt-1">
         <div className="flex items-center justify-between h-full px-2">
             <NavItem view="dashboard" icon={LayoutDashboard} label="Záznam" />
-            <NavItem view="reports" icon={FileBarChart} label="Reporty" />
+            
+            {isAdmin && (
+                <NavItem view="reports" icon={FileBarChart} label="Reporty" />
+            )}
+
             <NavItem view="manage" icon={Users} label="Správa" />
             <NavItem view="history" icon={History} label="História" />
             

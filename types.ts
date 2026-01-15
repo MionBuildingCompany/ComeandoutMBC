@@ -20,9 +20,16 @@ export interface WorkRecord {
   lunchDuration: string;
   endTime: string;
   createdAt: number;
+  status: 'active' | 'completed';
 }
 
-export type ViewState = 'login' | 'dashboard' | 'manage' | 'history' | 'reports';
+export type ViewState = 'login' | 'dashboard' | 'manage' | 'history' | 'reports' | 'worker_profile';
+export type UserRole = 'admin' | 'user';
+
+export interface UserSession {
+  name: string;
+  role: UserRole;
+}
 
 export interface TimeConfig {
   startTime: string;

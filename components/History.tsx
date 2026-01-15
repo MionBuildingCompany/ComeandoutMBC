@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { WorkRecord, Site, Worker } from '../types';
-import { Calendar, MapPin, User, ArrowRight, Trash2, X, Filter } from 'lucide-react';
+import { Calendar, MapPin, User, ArrowRight, Trash2, X, Filter, Clock } from 'lucide-react';
 
 interface HistoryProps {
   records: WorkRecord[];
@@ -80,12 +80,15 @@ export const History: React.FC<HistoryProps> = ({ records, sites, workers, onDel
         <>
             {/* Mobile View: Cards */}
             <div className="md:hidden space-y-3">
-            {sortedRecords.map(record => (
-                <div key={record.id} className="bg-[#111] p-5 rounded-xl border border-white/5 relative group">
+            {sortedRecords.map(record => {
+                const isActive = record.status === 'active';
+                return (
+                <div key={record.id} className={`bg-[#111] p-5 rounded-xl border relative group ${isActive ? 'border-green-500/20' : 'border-white/5'}`}>
                 <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-2 text-red-600 text-[10px] font-black uppercase tracking-widest">
+                    <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-green-500' : 'text-red-600'}`}>
                     <Calendar size={12} />
                     <span>{new Date(record.date).toLocaleDateString('sk-SK')}</span>
+                    {isActive && <span className="ml-2 bg-green-500/10 px-2 py-0.5 rounded text-green-500">LIVE</span>}
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">{record.foremanName}</span>
@@ -100,7 +103,7 @@ export const History: React.FC<HistoryProps> = ({ records, sites, workers, onDel
 
                 <div className="flex items-start gap-3 mb-5">
                     <div className="mt-1">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-green-500/10 text-green-500' : 'bg-white/5 text-zinc-400'}`}>
                         <User size={16} />
                     </div>
                     </div>
@@ -121,20 +124,30 @@ export const History: React.FC<HistoryProps> = ({ records, sites, workers, onDel
                     <div className="text-zinc-700">
                     <ArrowRight size={14} />
                     </div>
-                    <div className="text-center">
-                    <span className="block text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Obed</span>
-                    <span className="block font-bold text-zinc-400 text-sm">{record.lunchDuration}</span>
-                    </div>
-                    <div className="text-zinc-700">
-                    <ArrowRight size={14} />
-                    </div>
-                    <div className="text-center">
-                    <span className="block text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Koniec</span>
-                    <span className="block font-bold text-white text-sm">{record.endTime}</span>
-                    </div>
+                    
+                    {isActive ? (
+                        <div className="flex items-center gap-2 text-green-500 text-xs font-bold uppercase tracking-widest w-full justify-center">
+                            <Clock size={14} className="animate-pulse" />
+                            V práci
+                        </div>
+                    ) : (
+                        <>
+                            <div className="text-center">
+                            <span className="block text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Obed</span>
+                            <span className="block font-bold text-zinc-400 text-sm">{record.lunchDuration}</span>
+                            </div>
+                            <div className="text-zinc-700">
+                            <ArrowRight size={14} />
+                            </div>
+                            <div className="text-center">
+                            <span className="block text-[9px] text-zinc-500 uppercase tracking-wider mb-1">Koniec</span>
+                            <span className="block font-bold text-white text-sm">{record.endTime}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
                 </div>
-            ))}
+            )})}
             </div>
 
             {/* Desktop View: Table */}
@@ -151,7 +164,9 @@ export const History: React.FC<HistoryProps> = ({ records, sites, workers, onDel
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {sortedRecords.map(record => (
+                        {sortedRecords.map(record => {
+                            const isActive = record.status === 'active';
+                            return (
                             <tr key={record.id} className="hover:bg-white/5 transition-colors group">
                                 <td className="p-4 text-sm font-medium text-white">
                                     {new Date(record.date).toLocaleDateString('sk-SK')}
@@ -163,7 +178,14 @@ export const History: React.FC<HistoryProps> = ({ records, sites, workers, onDel
                                     {getSiteName(record.siteId)}
                                 </td>
                                 <td className="p-4 text-sm font-mono text-zinc-300">
-                                    {record.startTime} - {record.endTime} <span className="text-zinc-600">({record.lunchDuration} obed)</span>
+                                    {isActive ? (
+                                        <div className="flex items-center gap-2 text-green-500">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                            <span>{record.startTime} — ...</span>
+                                        </div>
+                                    ) : (
+                                        <span>{record.startTime} - {record.endTime} <span className="text-zinc-600">({record.lunchDuration} obed)</span></span>
+                                    )}
                                 </td>
                                 <td className="p-4 text-xs text-zinc-500 uppercase font-bold tracking-wider">
                                     {record.foremanName}
@@ -177,7 +199,7 @@ export const History: React.FC<HistoryProps> = ({ records, sites, workers, onDel
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                        )})}
                     </tbody>
                 </table>
             </div>

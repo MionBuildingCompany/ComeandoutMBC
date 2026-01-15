@@ -20,6 +20,7 @@ export const Reports: React.FC<ReportsProps> = ({ records, sites, workers }) => 
 
   // Helpers
   const parseTime = (time: string) => {
+    if (!time) return 0;
     const [h, m] = time.split(':').map(Number);
     return h * 60 + m;
   };
@@ -37,7 +38,9 @@ export const Reports: React.FC<ReportsProps> = ({ records, sites, workers }) => 
 
   // Filter Logic
   const filteredData = useMemo(() => {
-    return records.filter(record => {
+    return records
+    .filter(record => record.status !== 'active') // Exclude active shifts from reports
+    .filter(record => {
       const recordDate = record.date;
       const matchesDate = recordDate >= dateFrom && recordDate <= dateTo;
       const matchesWorker = selectedWorkerId === 'all' || record.workerId === selectedWorkerId;

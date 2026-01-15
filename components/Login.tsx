@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { ArrowRight, Lock, User, AlertCircle } from 'lucide-react';
+import { UserRole, UserSession } from '../types';
 
 interface LoginProps {
-  onLogin: (name: string) => void;
+  onLogin: (session: UserSession) => void;
 }
 
-// Hardcoded users for authentication
-const ALLOWED_USERS = [
-  { name: 'Štefan Kukučka', password: '190305' }
+// User database configuration
+const USERS_DB = [
+  { username: 'kukučka', password: '1234', displayName: 'p. Kukučka', role: 'user' as UserRole },
+  { username: 'hudák', password: '1111', displayName: 'p. Hudák', role: 'user' as UserRole },
+  { username: 'šoltis', password: '1212', displayName: 'p. Šoltis', role: 'user' as UserRole },
+  { username: 'olšavska', password: '0123', displayName: 'p. Olšavska', role: 'admin' as UserRole },
+  { username: 'raš', password: '0987', displayName: 'p. Raš', role: 'user' as UserRole },
+  { username: 'guest', password: '1234', displayName: 'Guest', role: 'user' as UserRole }
 ];
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -19,16 +25,22 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !password.trim()) {
+    const inputName = name.trim().toLowerCase();
+    const inputPass = password.trim();
+
+    if (!inputName || !inputPass) {
         setError('Vyplňte všetky polia');
         return;
     }
 
-    // Case-insensitive name check
-    const user = ALLOWED_USERS.find(u => u.name.toLowerCase() === name.trim().toLowerCase());
+    // Find user (case insensitive for username)
+    const user = USERS_DB.find(u => u.username === inputName);
 
-    if (user && user.password === password.trim()) {
-      onLogin(user.name);
+    if (user && user.password === inputPass) {
+      onLogin({
+        name: user.displayName,
+        role: user.role
+      });
     } else {
       setError('Nesprávne meno alebo heslo');
     }
@@ -71,14 +83,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           
           <div className="space-y-1">
-             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Meno</label>
+             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Meno / Priezvisko</label>
              <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-red-500 transition-colors">
                     <User size={20} />
                 </div>
                 <input 
                   type="text" 
-                  placeholder="Meno a Priezvisko" 
+                  placeholder="napr. Kukučka" 
                   value={name}
                   onChange={(e) => {
                       setName(e.target.value);
@@ -97,7 +109,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
                 <input 
                   type="password" 
-                  placeholder="Heslo" 
+                  placeholder="PIN Kód" 
                   value={password}
                   onChange={(e) => {
                       setPassword(e.target.value);

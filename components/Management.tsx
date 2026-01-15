@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Site, Worker } from '../types';
-import { Plus, Trash2, MapPin, HardHat, Search } from 'lucide-react';
+import { Plus, Trash2, MapPin, HardHat, Search, ChevronRight } from 'lucide-react';
 
 interface ManagementProps {
   sites: Site[];
@@ -9,10 +9,11 @@ interface ManagementProps {
   onRemoveSite: (id: string) => void;
   onAddWorker: (name: string, role: string) => void;
   onRemoveWorker: (id: string) => void;
+  onSelectWorker: (workerId: string) => void;
 }
 
 export const Management: React.FC<ManagementProps> = ({ 
-  sites, workers, onAddSite, onRemoveSite, onAddWorker, onRemoveWorker 
+  sites, workers, onAddSite, onRemoveSite, onAddWorker, onRemoveWorker, onSelectWorker
 }) => {
   const [activeTab, setActiveTab] = useState<'sites' | 'workers'>('sites');
 
@@ -147,19 +148,36 @@ export const Management: React.FC<ManagementProps> = ({
 
             <div className="space-y-2">
                 {filteredWorkers.map(worker => (
-                <div key={worker.id} className="bg-[#111] p-4 rounded-xl border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
+                <div 
+                    key={worker.id} 
+                    onClick={() => onSelectWorker(worker.id)}
+                    className="bg-[#111] p-4 rounded-xl border border-white/5 flex items-center justify-between group hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer relative"
+                >
                     <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500 shrink-0">
                         <HardHat size={20} />
                     </div>
                     <div>
-                        <p className="font-bold text-white text-sm">{worker.name}</p>
+                        <p className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">{worker.name}</p>
                         <p className="text-xs text-zinc-500">{worker.role}</p>
                     </div>
                     </div>
-                    <button onClick={() => onRemoveWorker(worker.id)} className="text-zinc-600 hover:text-red-600 transition-colors p-2 shrink-0">
-                    <Trash2 size={18} />
-                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                        <div className="text-zinc-700 group-hover:text-white transition-colors">
+                            <ChevronRight size={18} />
+                        </div>
+                        {/* Stop propagation to prevent opening profile when clicking delete */}
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onRemoveWorker(worker.id);
+                            }} 
+                            className="text-zinc-600 hover:text-red-600 transition-colors p-2 shrink-0 z-10"
+                        >
+                            <Trash2 size={18} />
+                        </button>
+                    </div>
                 </div>
                 ))}
                 {filteredWorkers.length === 0 && <p className="text-center text-zinc-600 text-xs uppercase tracking-widest py-4">Žiadne výsledky</p>}

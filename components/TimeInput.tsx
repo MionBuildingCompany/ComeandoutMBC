@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 
 interface TimeInputProps {
   label: string;
@@ -41,30 +41,34 @@ export const TimeInput: React.FC<TimeInputProps> = ({ label, value, onChange, is
   return (
     <div className="flex flex-col gap-2 w-full">
       <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{label}</label>
-      <div className="flex items-center bg-[#111] border border-white/10 rounded-lg overflow-hidden h-14 transition-colors focus-within:border-red-600/50">
-        <input
-          type="time" 
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-4 text-xl font-bold text-white outline-none h-full bg-transparent [color-scheme:dark]"
-        />
-        <div className="flex flex-col border-l border-white/10 h-full w-12">
-          <button
-            onClick={(e) => { e.preventDefault(); adjustTime(isDuration ? 5 : 15); }}
-            className="flex-1 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors text-zinc-400"
-            type="button"
-          >
-            <ChevronUp size={16} />
-          </button>
-          <div className="h-[1px] bg-white/10 w-full" />
-          <button
+      <div className="flex items-center gap-2">
+        {/* Decrease Button */}
+        <button
             onClick={(e) => { e.preventDefault(); adjustTime(isDuration ? -5 : -15); }}
-            className="flex-1 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors text-zinc-400"
+            className="w-12 h-14 bg-[#111] border border-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
             type="button"
-          >
-            <ChevronDown size={16} />
-          </button>
+        >
+            <Minus size={20} />
+        </button>
+
+        {/* Display / Native Input */}
+        <div className="flex-1 relative h-14 bg-[#111] border border-white/10 rounded-lg overflow-hidden focus-within:border-red-600/50 transition-colors">
+             <input
+                type="time" 
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full h-full text-center text-xl font-black text-white bg-transparent outline-none [color-scheme:dark] px-2"
+            />
         </div>
+
+        {/* Increase Button */}
+        <button
+            onClick={(e) => { e.preventDefault(); adjustTime(isDuration ? 5 : 15); }}
+            className="w-12 h-14 bg-[#111] border border-white/10 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+            type="button"
+        >
+            <Plus size={20} />
+        </button>
       </div>
     </div>
   );
