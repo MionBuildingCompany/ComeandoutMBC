@@ -179,6 +179,11 @@ const App: React.FC = () => {
                 <LogOut size={20} className="group-hover:text-red-500 transition-colors" />
                 <span className="font-bold text-sm uppercase tracking-wide">Odhlásiť</span>
             </button>
+            
+            {/* Credits Footer */}
+            <p className="text-[9px] text-zinc-700 text-center font-medium mt-6 tracking-wider opacity-60 hover:opacity-100 transition-opacity cursor-default">
+                Vytvoril a spravuje Stoler Danil  2026 ©
+            </p>
         </div>
       </aside>
 
