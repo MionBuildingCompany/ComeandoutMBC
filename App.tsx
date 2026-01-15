@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { Management } from './components/Management';
-import { Login } from './components/Login';
 import { Tabs } from './components/ui/Tabs';
 import { History } from './components/History';
 import { Reports } from './components/Reports';
@@ -22,8 +21,6 @@ const INITIAL_WORKERS: Worker[] = [
 
 const App: React.FC = () => {
   // State initialization with LocalStorage
-  // LOGIN TEMPORARILY DISABLED/COMMENTED OUT
-  // const [user, setUser] = useState<string | null>(() => localStorage.getItem('app_user'));
   const [user, setUser] = useState<string | null>('Štefan Kukučka'); // Default user for development
 
   const [view, setView] = useState<ViewState>('dashboard');
@@ -53,14 +50,7 @@ const App: React.FC = () => {
   }, [user]);
 
   // Handlers
-  const handleLogin = (name: string) => {
-    setUser(name);
-    setView('dashboard');
-  };
-
   const handleLogout = () => {
-    // setUser(null); // Disabled logout clearing user
-    // setView('login');
     alert("Logout temporarily disabled during development");
   };
 
@@ -122,14 +112,6 @@ const App: React.FC = () => {
     );
   };
 
-  // Render Logic
-  // LOGIN LOGIC COMMENTED OUT
-  /* 
-  if (!user) {
-    return <Login onLogin={handleLogin} />;
-  }
-  */
-
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-red-600 selection:text-white relative overflow-hidden flex">
       
@@ -182,7 +164,7 @@ const App: React.FC = () => {
             
             {/* Credits Footer */}
             <p className="text-[9px] text-zinc-700 text-center font-medium mt-6 tracking-wider opacity-60 hover:opacity-100 transition-opacity cursor-default">
-                Vytvoril a spravuje Stoler Danil  2026 ©
+                Vytvoril a spravuje Stoler Danil © 2026
             </p>
         </div>
       </aside>
